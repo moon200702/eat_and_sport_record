@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="add_record" type="id" />
+    <item name="record_name" type="id" />
+    <item name="record_calories" type="id" />
+    <item name="record_minutes" type="id" />
+    <item name="record_type" type="id" />
+    <item name="filter_all" type="id" />
+    <item name="filter_food" type="id" />
+    <item name="filter_exercise" type="id" />
+    <item name="records_list" type="id" />
+    <item name="previous_day" type="id" />
+    <item name="next_day" type="id" />
+    <item name="selected_date" type="id" />
+    <item name="summary_intake" type="id" />
+    <item name="summary_burned" type="id" />
+    <item name="summary_minutes" type="id" />
+</resources>

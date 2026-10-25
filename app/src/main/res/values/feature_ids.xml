@@ -1,0 +1,24 @@
+<resources>
+    <item name="home_food" type="id" />
+    <item name="home_exercise" type="id" />
+    <item name="nav_home" type="id" />
+    <item name="nav_search" type="id" />
+    <item name="nav_stats" type="id" />
+    <item name="nav_data" type="id" />
+    <item name="week_strip" type="id" />
+    <item name="search_query" type="id" />
+    <item name="search_type" type="id" />
+    <item name="search_date" type="id" />
+    <item name="search_time" type="id" />
+    <item name="search_results" type="id" />
+    <item name="record_note" type="id" />
+    <item name="editor_date" type="id" />
+    <item name="editor_time" type="id" />
+    <item name="editor_save" type="id" />
+    <item name="editor_cancel" type="id" />
+    <item name="add_media" type="id" />
+    <item name="media_list" type="id" />
+    <item name="export_backup" type="id" />
+    <item name="import_backup" type="id" />
+    <item name="work_status" type="id" />
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.EatAndSport.Base" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#216A50</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#F7F8F2</item>
+        <item name="android:navigationBarColor">#216A50</item>
+        <item name="android:windowBackground">#F7F8F2</item>
+    </style>
+    <style name="Theme.EatAndSport" parent="Theme.EatAndSport.Base" />
+</resources>
