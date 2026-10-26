@@ -37,13 +37,17 @@ class NoteRepository(context: Context) : AutoCloseable {
         store.delete(id)
         old.attachments.forEach { File(mediaDir, it.fileName).delete() }
     }
+    fun deletePlan(id: String) = synchronized(AppData.lock) {
+        val items = store.snapshot().items(id)
+        store.deletePlan(id)
+        items.flatMap { it.attachments }.forEach { File(mediaDir, it.fileName).delete() }
+    }
     fun save(record: Record, pendingUris: List<Uri>): Record = synchronized(AppData.lock) {
         val created = mutableListOf<Attachment>()
         try {
             pendingUris.forEach { created += importAttachment(it) }
             val old = store.find(record.id)
-            val saved = record.copy(attachments = record.attachments + created)
-            store.upsert(saved)
+            val saved = store.upsert(record.copy(attachments = record.attachments + created))
             old?.attachments?.filter { a -> saved.attachments.none { it.fileName == a.fileName } }
                 ?.forEach { File(mediaDir, it.fileName).delete() }
             saved

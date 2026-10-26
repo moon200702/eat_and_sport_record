@@ -1,0 +1,15 @@
+<resources>
+    <item name="nav_plans" type="id" />
+    <item name="home_plans" type="id" />
+    <item name="plan_list" type="id" />
+    <item name="new_plan" type="id" />
+    <item name="plan_name" type="id" />
+    <item name="plan_description" type="id" />
+    <item name="plan_save" type="id" />
+    <item name="plan_cancel" type="id" />
+    <item name="plan_items" type="id" />
+    <item name="add_plan_item" type="id" />
+    <item name="edit_plan" type="id" />
+    <item name="delete_plan" type="id" />
+    <item name="back_to_plans" type="id" />
+</resources>

@@ -9,6 +9,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EatAndSport">
         <activity android:name=".EditorActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".PlanEditorActivity" android:exported="false" android:windowSoftInputMode="adjustResize" />
         <activity android:name=".MediaViewerActivity" android:exported="false" />
         <activity
             android:name=".MainActivity"

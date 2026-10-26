@@ -17,6 +17,8 @@ data class Record(
     val note: String = "",
     val attachments: List<Attachment> = emptyList(),
     val timeKnown: Boolean = true,
+    val planId: String? = null,
+    val planPosition: Int = 0,
 ) {
     init {
         require(id.isNotBlank() && id.length <= 128)
@@ -27,13 +29,15 @@ data class Record(
         require(time.second == 0 && time.nano == 0)
         require(attachments.size <= 10)
         require(attachments.map { it.fileName }.distinct().size == attachments.size)
+        require(planPosition in 0..100_000)
+        require(if (planId == null) planPosition == 0 else planId.isNotBlank() && planId.length <= 128 && type == RecordType.EXERCISE)
     }
 }
 
 data class DaySummary(val intake: Long, val burned: Long, val minutes: Long)
 
 fun summarize(records: List<Record>, date: LocalDate): DaySummary {
-    val day = records.filter { it.date == date }
+    val day = records.filter { it.planId == null && it.date == date }
     return DaySummary(
         intake = day.filter { it.type == RecordType.FOOD }.sumOf { it.calories.toLong() },
         burned = day.filter { it.type == RecordType.EXERCISE }.sumOf { it.calories.toLong() },

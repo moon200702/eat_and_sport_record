@@ -4,6 +4,7 @@ import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.map
 import java.time.LocalDate
 import java.time.LocalTime
 import java.util.concurrent.Executors
@@ -17,11 +18,14 @@ class MainModel(application: Application) : AndroidViewModel(application) {
     private val worker = Executors.newSingleThreadExecutor()
     private val searchVersion = AtomicInteger()
     @Volatile private var cleared = false
-    val records = MutableLiveData<List<Record>>()
+    val snapshot = MutableLiveData<NoteSnapshot>()
+    val records = snapshot.map { it.dailyRecords }
+    val plans get() = snapshot.value?.plans.orEmpty()
+    val allRecords get() = snapshot.value?.records.orEmpty()
     val results = MutableLiveData<List<Record>>()
     val status = MutableLiveData(WorkStatus())
 
-    fun refresh() { worker.execute { runCatching { repository.store.load() }.onSuccess { records.postValue(it) }
+    fun refresh() { worker.execute { runCatching { repository.store.snapshot() }.onSuccess { snapshot.postValue(it) }
         .onFailure { status.postValue(WorkStatus(message = "讀取失敗，原資料保持不變：${it.message}")) } } }
 
     fun search(query: String, type: RecordType?, date: LocalDate?, time: LocalTime?) {
@@ -35,6 +39,8 @@ class MainModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun delete(id: String) = work("正在刪除…") { repository.delete(id); "已刪除紀錄" }
+    fun deletePlan(id: String) = work("正在刪除菜單…") { repository.deletePlan(id); "已刪除菜單及其動作" }
+    fun movePlanItem(id: String, direction: Int) = work("正在調整順序…") { repository.store.movePlanItem(id, direction); "已調整動作順序" }
     fun export(uri: Uri) = work("正在匯出 SQLite 與附件，請稍候…") {
         requireNotNull(getApplication<Application>().contentResolver.openOutputStream(uri, "wt")).use { backups.export(it) }
         "完整備份已匯出"
@@ -53,7 +59,7 @@ class MainModel(application: Application) : AndroidViewModel(application) {
         work("正在匯入資料與附件…") {
             try {
                 val result = backups.apply(prepared, mode)
-                "已匯入 ${result.added} 筆，保留既有重複紀錄 ${result.skipped} 筆"
+                "已匯入 ${result.added} 筆筆記、${result.plansAdded} 份菜單（${result.itemsAdded} 個動作），保留既有重複筆記 ${result.skipped} 筆、菜單 ${result.plansSkipped} 份"
             } finally { prepared.close() }
         }
     }
@@ -63,7 +69,7 @@ class MainModel(application: Application) : AndroidViewModel(application) {
     private fun work(message: String, action: () -> String) {
         status.value = WorkStatus(busy = true, message = message)
         worker.execute {
-            try { val result = action(); records.postValue(repository.store.load()); status.postValue(WorkStatus(message = result)) }
+            try { val result = action(); snapshot.postValue(repository.store.snapshot()); status.postValue(WorkStatus(message = result)) }
             catch (e: Exception) { status.postValue(WorkStatus(message = "操作失敗：${e.message}")) }
         }
     }
@@ -80,6 +86,16 @@ class EditorModel(application: Application) : AndroidViewModel(application) {
     val busy = MutableLiveData(false)
     val saved = MutableLiveData(false)
     val error = MutableLiveData<String>()
+    fun savePlan(plan: WorkoutPlan) {
+        if (busy.value == true) return
+        busy.value = true
+        worker.execute {
+            try {
+                RecordStore(getApplication<Application>()).use { it.savePlan(plan) }
+                saved.postValue(true)
+            } catch (e: Exception) { error.postValue("菜單儲存失敗，請確認手機空間後重試。"); busy.postValue(false) }
+        }
+    }
     fun save(record: Record, pendingUris: List<Uri>) {
         if (busy.value == true) return
         busy.value = true

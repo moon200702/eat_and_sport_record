@@ -43,6 +43,7 @@ class EditorActivity : ComponentActivity() {
     private var time = LocalTime.now().withSecond(0).withNano(0)
     private var recordId = UUID.randomUUID().toString()
     private var original: Record? = null
+    private var planId: String? = null
     private var stored = mutableListOf<Attachment>()
     private val pending = mutableListOf<String>()
 
@@ -67,6 +68,8 @@ class EditorActivity : ComponentActivity() {
         val editId = intent.getStringExtra("id")
         try {
             original = editId?.let { id -> RecordStore(this).use { it.find(id) } ?: error("找不到此筆紀錄") }
+            planId = original?.planId ?: intent.getStringExtra("planId")
+            planId?.let { id -> require(RecordStore(this).use { it.findPlan(id) } != null) { "找不到此份菜單" } }
         } catch (e: Exception) { toast(e.message.orEmpty()); finish(); return }
         recordId = savedInstanceState?.getString("recordId") ?: original?.id ?: recordId
         date = LocalDate.parse(savedInstanceState?.getString("date") ?: original?.date?.toString() ?: intent.getStringExtra("date") ?: date.toString())
@@ -75,9 +78,10 @@ class EditorActivity : ComponentActivity() {
         pending += savedInstanceState?.getStringArrayList("pending").orEmpty()
         val form = ui.column()
         form.addView(ui.gap(20))
-        form.addView(ui.text(if (original == null) "新增筆記" else "編輯筆記", 28, bold = true))
-        form.addView(ui.text("記下時間、內容，留住每次日常。", 14, ui.muted))
-        if (original?.timeKnown == false) form.addView(ui.text("這筆舊版紀錄未記錄時間，儲存前請確認時刻。", 14, ui.muted))
+        form.addView(ui.text(if (planId != null) { if (original == null) "新增菜單動作" else "編輯菜單動作" }
+            else if (original == null) "新增筆記" else "編輯筆記", 28, bold = true))
+        form.addView(ui.text(if (planId != null) "設定動作、組數與休息方式，可加入示範圖片及影片。" else "記下時間、內容，留住每次日常。", 14, ui.muted))
+        if (planId == null && original?.timeKnown == false) form.addView(ui.text("這筆舊版紀錄未記錄時間，儲存前請確認時刻。", 14, ui.muted))
         form.addView(ui.gap())
         dateButton = ui.button(date.toString(), id = R.id.editor_date) {
             if (!busy()) DatePickerDialog(this, { _, y, m, d -> date = LocalDate.of(y, m + 1, d); updateDateTime() }, date.year, date.monthValue - 1, date.dayOfMonth).show()
@@ -86,21 +90,25 @@ class EditorActivity : ComponentActivity() {
             if (!busy()) TimePickerDialog(this, { _, h, m -> time = LocalTime.of(h, m); updateDateTime() }, time.hour, time.minute, true).show()
         }
         form.addView(ui.row().apply {
+            if (planId != null) visibility = View.GONE
             addView(dateButton, LinearLayout.LayoutParams(0, -2, 1f))
             addView(timeButton, LinearLayout.LayoutParams(0, -2, 1f))
         })
-        form.addView(ui.text("類型", 14, ui.muted))
+        if (planId == null) form.addView(ui.text("類型", 14, ui.muted))
         type = Spinner(this).apply {
             id = R.id.record_type; contentDescription = "筆記類型"
             adapter = ArrayAdapter(this@EditorActivity, android.R.layout.simple_spinner_dropdown_item, listOf("飲食", "運動"))
-            val initial = savedInstanceState?.getInt("type") ?: if ((original?.type?.name ?: intent.getStringExtra("type")) == "EXERCISE") 1 else 0
+            val initial = if (planId != null) 1 else savedInstanceState?.getInt("type") ?: if ((original?.type?.name ?: intent.getStringExtra("type")) == "EXERCISE") 1 else 0
             setSelection(initial)
+            if (planId != null) visibility = View.GONE
         }
         form.addView(type, LinearLayout.LayoutParams(-1, ui.dp(48)))
-        name = ui.input(form, "名稱／動作", "例如：午餐、深蹲、慢跑", R.id.record_name).apply {
+        name = ui.input(form, if (planId != null) "動作名稱" else "名稱／動作",
+            if (planId != null) "例如：深蹲、伏地挺身、伸展" else "例如：午餐、深蹲、慢跑", R.id.record_name).apply {
             filters = arrayOf(InputFilter.LengthFilter(80)); setText(savedInstanceState?.getString("name") ?: original?.name.orEmpty())
         }
-        note = ui.input(form, "筆記內容", "飲食內容、運動組數、感受…", R.id.record_note, multiline = true).apply {
+        note = ui.input(form, if (planId != null) "動作內容" else "筆記內容",
+            if (planId != null) "例如：深蹲 3 組 × 12 下，組間休息 60 秒" else "飲食內容、運動組數、感受…", R.id.record_note, multiline = true).apply {
             filters = arrayOf(InputFilter.LengthFilter(20_000)); setText(savedInstanceState?.getString("note") ?: original?.note.orEmpty())
         }
         calories = ui.input(form, "熱量 kcal（選填）", "未填則不計入熱量", R.id.record_calories, number = true).apply {
@@ -125,14 +133,14 @@ class EditorActivity : ComponentActivity() {
         form.addView(ui.gap(24))
         val footer = ui.row()
         footer.addView(ui.button("取消", id = R.id.editor_cancel) { discard() }, LinearLayout.LayoutParams(0, ui.dp(56), 1f))
-        saveButton = ui.button("儲存筆記", true, R.id.editor_save) { save() }
+        saveButton = ui.button(if (planId != null) "儲存動作" else "儲存筆記", true, R.id.editor_save) { save() }
         footer.addView(saveButton, LinearLayout.LayoutParams(0, ui.dp(56), 2f))
         setContentView(ui.page(form, footer))
         renderMedia()
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) { override fun handleOnBackPressed() { discard() } })
         model.busy.observe(this) { busy ->
             saveButton.isEnabled = !busy
-            saveButton.text = if (busy) "正在儲存附件…" else "儲存筆記"
+            saveButton.text = if (busy) "正在儲存附件…" else if (planId != null) "儲存動作" else "儲存筆記"
             // The retained ViewModel continues copying on rotation; freeze draft controls while saving.
             fun enable(view: View) {
                 view.isEnabled = !busy
@@ -141,7 +149,7 @@ class EditorActivity : ComponentActivity() {
             enable(form)
         }
         model.saved.observe(this) { saved -> if (saved) {
-            setResult(RESULT_OK, Intent().putExtra("date", date.toString()).putExtra("type", if (type.selectedItemPosition == 1) "EXERCISE" else "FOOD"))
+            setResult(RESULT_OK, Intent().putExtra("date", date.toString()).putExtra("type", if (type.selectedItemPosition == 1) "EXERCISE" else "FOOD").putExtra("planId", planId))
             finish()
         } }
         model.error.observe(this) { toast(it) }
@@ -159,7 +167,8 @@ class EditorActivity : ComponentActivity() {
         minutes.error = if (duration == null || duration !in 0..1_440) "請輸入 0–1,440 之間的整數" else null
         if (name.error != null || calories.error != null || minutes.error != null) return
         model.save(Record(recordId, date, if (type.selectedItemPosition == 1) RecordType.EXERCISE else RecordType.FOOD,
-            title, requireNotNull(kcal), requireNotNull(duration), time, note.text.toString(), stored.toList()), pending.map { it.toUri() })
+            title, requireNotNull(kcal), requireNotNull(duration), time, note.text.toString(), stored.toList(),
+            timeKnown = planId == null, planId = planId, planPosition = original?.planPosition ?: 0), pending.map { it.toUri() })
     }
     private fun renderMedia() {
         mediaList.removeAllViews()
