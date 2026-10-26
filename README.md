@@ -2,7 +2,7 @@
 
 以 Kotlin 撰寫的原生 Android App，協助記錄每日飲食與運動。介面使用繁體中文。
 
-[下載 Android 測試版 APK（1.2.0）](releases/eat-and-sport-record-1.2.0-debug.apk?raw=true) · [APK 與檔案驗證說明](releases/README.md)
+[下載 Android 測試版 APK（1.2.0）](releases/) · [APK 與檔案驗證說明](releases/README.md)
 
 ## 功能
 
