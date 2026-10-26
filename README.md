@@ -1,6 +1,6 @@
 # 日常食動 · Eat & Sport Record
 
-以 Kotlin 撰寫的原生 Android App，協助記錄每日飲食與運動。介面使用繁體中文。
+以 Kotlin 撰寫的原生 Android App，協助記錄每日飲食與運動。介面使用繁體中文。整個程式由codex產生。
 
 [下載 Android 測試版 APK（1.2.0）](releases/) · [APK 與檔案驗證說明](releases/README.md)
 
